@@ -7,6 +7,7 @@
 *	© 2018, www.jensheukers.nl
 */
 #include <iostream>
+#include <filesystem>
 #include <string>
 #include <sstream>
 #include <vector>
@@ -14,12 +15,15 @@
 #include <sys/stat.h>
 #include "logger.h"
 
+namespace fs = std::experimental::filesystem;
+
 std::string _versionString = "Version: 19/11/2018";
 std::string _exeDir; /// @brief Directory of the executable
 
 std::string _pboSrc; /// @brief PBO Source directory
 std::string _pboDest; /// @brief PBO Destination directory
 std::string _dzToolsDir; /// @brief Destination of the DayZ Tools
+std::string _dzToolsImageToPaaDir; /// @brief Destination of the ImageToPaa executable
 
 Logger* logger; /// @brief Pointer to Logger class
 bool _extensiveLogging; /// @brief if true will log everything to the console 
@@ -100,6 +104,59 @@ int ReadSettings() {
 * Prepare the PBO for binarize
 */
 int PreparePBO() {
+
+	//Create log folder in P:Drive if not exists
+	if (!DirExists("P:/temp", logger)) { //Directory should not exist
+		logger->Log("Creating temp folder in P: Drive...");
+		fs::create_directories("P:/temp");
+	}
+	else { // Else remove the temp folder
+		logger->Log("Removing temp folder...");
+		fs::remove_all("P:/temp");
+		logger->Log("Creating temp folder in P: Drive...");
+		fs::create_directories("P:/temp");
+	}
+
+	//Check if directory is created
+	if (!DirExists("P:/temp", logger)) {
+		logger->Log("Failed to create temp folder in P: Drive!"); // print error
+		return 1; // return
+	};	
+
+	logger->Log("Directory created succesfully");
+
+	logger->Log("Attempting to copy files...");
+	//Copy over files to temp folder
+	try
+	{
+		fs::copy(_pboSrc, "P:/temp", fs::copy_options::overwrite_existing | fs::copy_options::recursive);
+	}
+	catch (std::exception& e)
+	{
+		std::cout << e.what();
+		return 1;
+	}
+
+	logger->Log("Succesfully copied over files");
+
+	//Convert all .png's to .paa's
+	if (DirExists("P:\\temp\\data\\layers", logger)) {
+		logger->Log("Converting .png's to .paa's");
+
+		std::string command = "\"";
+		command.append(_dzToolsImageToPaaDir);
+		command.append("\\ImageToPAA.exe");
+		command.append("\" ");
+		command.append("P:\\temp\\data\\layers");
+
+		int result = system(command.c_str()); // Run the command
+
+		if (result != 0) { // If Failed
+			return 1; // Return error
+		}
+
+	}
+
 	return 0;
 }
 
@@ -167,9 +224,9 @@ int main(int argc, char* argv[]) {
 		return 1;
 	}
 
-	std::string _dzToolsImgToPaaDir = _dzToolsDir;
-	_dzToolsImgToPaaDir.append("\\Bin\\ImageToPAA");
-	if (!DirExists(_dzToolsImgToPaaDir.c_str(), logger)) {
+	_dzToolsImageToPaaDir = _dzToolsDir;
+	_dzToolsImageToPaaDir.append("\\Bin\\ImageToPAA");
+	if (!DirExists(_dzToolsImageToPaaDir.c_str(), logger)) {
 		logger->Log("Cannot find ImageToPAA directory, please re-install your DayZ Tools");
 		delete logger;
 		return 1;
@@ -202,10 +259,14 @@ int main(int argc, char* argv[]) {
 	int exitCode; 
 	std::string exitLog;
 	
+	logger->LogLine(50);
+	logger->Log("Calling PreparePBO()");
+	logger->LogLine(50);
+	logger->LogLine(50);
 	exitCode = PreparePBO();
 	exitLog = "PreparePBO() exited with Code: ";
-
 	logger->Log(exitLog.append(std::to_string(exitCode)));
+	logger->LogLine(50);
 
 	//Exit and Cleanup
 	if (exitCode == 0) {
