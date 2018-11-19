@@ -97,6 +97,13 @@ int ReadSettings() {
 }
 
 /**
+* Prepare the PBO for binarize
+*/
+int PreparePBO() {
+	return 0;
+}
+
+/**
 * Execute program
 */
 int main(int argc, char* argv[]) {
@@ -144,8 +151,21 @@ int main(int argc, char* argv[]) {
 	logger->Log(_versionString);
 	logger->Log("\n");
 
-	if (!DirExists(_dzToolsDir.c_str(), logger)) {
-		logger->Log("Cannot find DayZ tools directory");
+	if (!DirExists("P:\\", logger)) {
+		logger->Log("P: Drive is not mounted, Please mount P Drive and try again");
+		delete logger;
+		return 1;
+	}
+
+	if (!DirExists(_dzToolsDir.append("\\Bin").c_str(), logger)) {
+		logger->Log("Cannot find DayZ tools directory, or directory is faulty");
+		delete logger;
+		return 1;
+	}
+
+	if (!DirExists(_dzToolsDir.append("\\Bin\\ImageToPAA").c_str(), logger)) {
+		logger->Log("Cannot find ImageToPAA directory, please re-install your DayZ Tools");
+		delete logger;
 		return 1;
 	}
 
@@ -157,6 +177,7 @@ int main(int argc, char* argv[]) {
 	logger->Log(_pboSrc);
 
 	if (!DirExists(_pboSrc.c_str(), logger)) {
+		delete logger;
 		return 1;
 	}
 
@@ -168,8 +189,12 @@ int main(int argc, char* argv[]) {
 	logger->Log(_pboDest);
 
 	if (!DirExists(_pboDest.c_str(), logger)) {
+		delete logger;
 		return 1;
 	}
+
+	//CLEANUP
+	delete logger;
 
 	return 0;
 }
