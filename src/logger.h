@@ -23,4 +23,9 @@ public:
 	* Log a line to the logfile and console
 	*/
 	void Log(std::string line);
+
+	/**
+	* Logs a simple line of lenght
+	*/
+	void LogLine(int lenght);
 };

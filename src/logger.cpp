@@ -27,3 +27,11 @@ void Logger::Log(std::string line) {
 
 	_logFileStream.close();
 }
+
+void Logger::LogLine(int lenght) {
+	std::string line;
+	for (int i = 0; i <= lenght; i++) {
+		line.append("-");
+	}
+	this->Log(line);
+}
