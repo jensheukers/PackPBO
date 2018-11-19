@@ -143,6 +143,8 @@ int main(int argc, char* argv[]) {
 			_settingsFile << "ExtensiveLogging=false" << "\n";
 			_extensiveLogging = false;
 		}
+
+		_settingsFile.close();
 	}
 
 	logger = new Logger(GetFilePath("log.txt"), _extensiveLogging); // Create logger instance
@@ -157,13 +159,17 @@ int main(int argc, char* argv[]) {
 		return 1;
 	}
 
-	if (!DirExists(_dzToolsDir.append("\\Bin").c_str(), logger)) {
+	std::string _dzToolsBinDir = _dzToolsDir;
+	_dzToolsBinDir.append("\\Bin");
+	if (!DirExists(_dzToolsBinDir.c_str(), logger)) {
 		logger->Log("Cannot find DayZ tools directory, or directory is faulty");
 		delete logger;
 		return 1;
 	}
 
-	if (!DirExists(_dzToolsDir.append("\\Bin\\ImageToPAA").c_str(), logger)) {
+	std::string _dzToolsImgToPaaDir = _dzToolsDir;
+	_dzToolsImgToPaaDir.append("\\Bin\\ImageToPAA");
+	if (!DirExists(_dzToolsImgToPaaDir.c_str(), logger)) {
 		logger->Log("Cannot find ImageToPAA directory, please re-install your DayZ Tools");
 		delete logger;
 		return 1;
@@ -192,8 +198,27 @@ int main(int argc, char* argv[]) {
 		delete logger;
 		return 1;
 	}
+	
+	int exitCode; 
+	std::string exitLog;
+	
+	exitCode = PreparePBO();
+	exitLog = "PreparePBO() exited with Code: ";
 
-	//CLEANUP
+	logger->Log(exitLog.append(std::to_string(exitCode)));
+
+	//Exit and Cleanup
+	if (exitCode == 0) {
+		logger->Log("All operations completed succesfully");
+	}
+	else {
+		logger->Log("One or more operations failed..");
+	}
+
+	do {
+		std::cout << "Press a key to continue...";
+	} while (std::cin.get() != '\n');
+
 	delete logger;
 
 	return 0;

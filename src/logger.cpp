@@ -24,4 +24,6 @@ void Logger::Log(std::string line) {
 	if (_loudOutput) {
 		std::cout << line << "\n"; //Log to console
 	}
+
+	_logFileStream.close();
 }
