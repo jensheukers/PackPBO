@@ -2,7 +2,7 @@
 *	Filename: main.cpp
 *
 *	Description: Main entry point source file for application
-*	Version: 19/11/2018
+*	Version: 20/11/2018
 *
 *	© 2018, www.jensheukers.nl
 */
@@ -17,7 +17,7 @@
 
 namespace fs = std::experimental::filesystem;
 
-std::string _versionString = "Version: 19/11/2018";
+std::string _versionString = "Version: 20/11/2018";
 std::string _exeDir; /// @brief Directory of the executable
 
 std::string _pboSrc; /// @brief PBO Source directory
@@ -27,6 +27,8 @@ std::string _dzToolsImageToPaaDir; /// @brief Destination of the ImageToPaa exec
 
 Logger* logger; /// @brief Pointer to Logger class
 bool _extensiveLogging; /// @brief if true will log everything to the console 
+
+std::vector<std::string> _CopyDirectTypes; /// @brief List of files to copy over directly
 
 /**
 * Get the absolute path to any file inside build folder
@@ -92,6 +94,14 @@ int ReadSettings() {
 					_extensiveLogging = false;
 				}
 			}
+
+			if (segments[0] == "ListOfFilesToCopyDirectly") {
+				std::stringstream ss(segments[1]);
+				std::string segment;
+				while (std::getline(ss, segment, ';')) {
+					_CopyDirectTypes.push_back(segment);
+				}
+			}
 		}
 		_settingsFile.close();
 		return true;
@@ -143,20 +153,26 @@ int PreparePBO() {
 	if (DirExists("P:\\temp\\data\\layers", logger)) {
 		logger->Log("Converting .png's to .paa's");
 
-		std::string command = "\"";
+		std::string command = "\""; // Define path to TextureToPAA.exe
 		command.append(_dzToolsImageToPaaDir);
 		command.append("\\ImageToPAA.exe");
 		command.append("\" ");
-		command.append("P:\\temp\\data\\layers");
+		command.append("P:\\temp\\data\\layers"); // Run with this argument
 
 		int result = system(command.c_str()); // Run the command
 
 		if (result != 0) { // If Failed
 			return 1; // Return error
 		}
-
 	}
 
+	return 0;
+}
+
+/**
+* Actually create the pbo and binarize
+*/
+int CreatePBO() {
 	return 0;
 }
 
@@ -201,6 +217,19 @@ int main(int argc, char* argv[]) {
 			_extensiveLogging = false;
 		}
 
+		// Default direct copy files to not be binarized
+		std::vector<std::string>_CopyDirectTypesDefault;
+		_CopyDirectTypesDefault.insert(_CopyDirectTypesDefault.end(), {"*.emat","*.edds","*.ptc","*.c","*.imageset","*.layout","*.ogg"});
+
+		_settingsFile << "ListOfFilesToCopyDirectly=";
+		for (int i = 0; i < _CopyDirectTypesDefault.size(); i++) {
+			_settingsFile << _CopyDirectTypesDefault[i];
+
+			if (i != _CopyDirectTypesDefault.size() - 1) {
+				_settingsFile << ";";
+			}
+		}
+		_settingsFile << "\n";
 		_settingsFile.close();
 	}
 
@@ -262,11 +291,15 @@ int main(int argc, char* argv[]) {
 	logger->LogLine(50);
 	logger->Log("Calling PreparePBO()");
 	logger->LogLine(50);
-	logger->LogLine(50);
 	exitCode = PreparePBO();
 	exitLog = "PreparePBO() exited with Code: ";
 	logger->Log(exitLog.append(std::to_string(exitCode)));
 	logger->LogLine(50);
+	logger->Log("Calling CreatePBO()");
+	logger->LogLine(50);
+	exitCode = CreatePBO();
+	exitLog = "CreatePBO() exited with Code: ";
+	logger->Log(exitLog.append(std::to_string(exitCode)));
 
 	//Exit and Cleanup
 	if (exitCode == 0) {
