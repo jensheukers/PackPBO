@@ -21,14 +21,16 @@ std::string _versionString = "Version: 20/11/2018";
 std::string _exeDir; /// @brief Directory of the executable
 
 std::string _pboSrc; /// @brief PBO Source directory
+std::string _pboTempSrc; /// @brief The PBO Source directory inside temp folder
 std::string _pboDest; /// @brief PBO Destination directory
 std::string _dzToolsDir; /// @brief Destination of the DayZ Tools
 std::string _dzToolsImageToPaaDir; /// @brief Destination of the ImageToPaa executable
+std::string _dzToolsAddonBuilderDir; /// @brief Destination of the AddonBuilder executable
 
 Logger* logger; /// @brief Pointer to Logger class
 bool _extensiveLogging; /// @brief if true will log everything to the console 
 
-std::vector<std::string> _CopyDirectTypes; /// @brief List of files to copy over directly
+std::string _copyDirectTypes; /// @brief List of files to copy over directly
 
 /**
 * Get the absolute path to any file inside build folder
@@ -96,11 +98,7 @@ int ReadSettings() {
 			}
 
 			if (segments[0] == "ListOfFilesToCopyDirectly") {
-				std::stringstream ss(segments[1]);
-				std::string segment;
-				while (std::getline(ss, segment, ';')) {
-					_CopyDirectTypes.push_back(segment);
-				}
+				_copyDirectTypes = segments[1];
 			}
 		}
 		_settingsFile.close();
@@ -135,7 +133,7 @@ int PreparePBO() {
 		path.push_back(segment);
 	}
 
-	std::string _pboTempSrc = "P:\\temp\\";
+	_pboTempSrc = "P:\\temp\\";
 	_pboTempSrc.append(path[path.size() - 1]);
 
 	if (DirExists(_pboTempSrc.c_str(), logger)) {
@@ -153,6 +151,7 @@ int PreparePBO() {
 	logger->Log("Directory created succesfully");
 
 	logger->Log("Attempting to copy files...");
+
 	//Copy over files to temp folder
 	try
 	{
@@ -167,8 +166,9 @@ int PreparePBO() {
 	logger->Log("Succesfully copied over files");
 
 	//Convert all .png's to .paa's
-	if (DirExists("P:\\temp\\data\\layers", logger)) {
-		logger->Log("Converting .png's to .paa's");
+	std::string _pboSrcLayers = _pboSrc;
+	if (DirExists(_pboSrcLayers.append("\\data\\layers").c_str(), logger)) {
+		logger->Log("Calling ImageToPAA.exe");
 
 		std::string command = "\""; // Define path to TextureToPAA.exe
 		command.append(_dzToolsImageToPaaDir);
@@ -176,7 +176,7 @@ int PreparePBO() {
 		command.append("\" ");
 		command.append(_pboTempSrc);
 		command.append("\\data\\layers"); // Run with this argument
-
+		
 		int result = system(command.c_str()); // Run the command
 
 		if (result != 0) { // If Failed
@@ -191,7 +191,35 @@ int PreparePBO() {
 * Actually create the pbo and binarize
 */
 int CreatePBO() {
+	//Create & Write to includes.txt
+	logger->Log("Creating includes.txt..");
 
+	std::string _includesPath = _pboTempSrc;
+	_includesPath.append("\\includes.txt");
+	std::ofstream _includes(_includesPath, std::ofstream::out);
+	_includes << _copyDirectTypes;
+	logger->Log("Succes Files to copy directly = ");
+	logger->Log(_copyDirectTypes);
+	_includes.close();
+
+	// Binarize and Pack
+	logger->Log("Calling AddonBuilder.exe");
+
+	std::string command = "\"";
+	command.append(_dzToolsAddonBuilderDir);
+	command.append("\\AddonBuilder.exe");
+	command.append("\" ");
+	command.append(_pboTempSrc);
+	command.append(" ");
+	command.append(_pboDest);
+	command.append(" -clear -include=");
+	command.append(_includesPath);
+
+	int result = system(command.c_str()); // Run the command
+
+	if (result != 0) { // If Failed
+		return 1; // Return error
+	}
 
 	return 0;
 }
@@ -238,18 +266,9 @@ int main(int argc, char* argv[]) {
 		}
 
 		// Default direct copy files to not be binarized
-		std::vector<std::string>_CopyDirectTypesDefault;
-		_CopyDirectTypesDefault.insert(_CopyDirectTypesDefault.end(), {"*.emat","*.edds","*.ptc","*.c","*.imageset","*.layout","*.ogg","*.paa","*.rvmat"});
+		_copyDirectTypes = "*.emat;*.edds;*.ptc;*.c;*.imageset;*.layout;*.ogg;*.paa;*.rvmat;";
 
-		_settingsFile << "ListOfFilesToCopyDirectly=";
-		for (int i = 0; i < _CopyDirectTypesDefault.size(); i++) {
-			_settingsFile << _CopyDirectTypesDefault[i];
-
-			if (i != _CopyDirectTypesDefault.size() - 1) {
-				_settingsFile << ";";
-			}
-		}
-		_settingsFile << "\n";
+		_settingsFile << "ListOfFilesToCopyDirectly=" << _copyDirectTypes << "\n";
 		_settingsFile.close();
 	}
 
@@ -277,6 +296,14 @@ int main(int argc, char* argv[]) {
 	_dzToolsImageToPaaDir.append("\\Bin\\ImageToPAA");
 	if (!DirExists(_dzToolsImageToPaaDir.c_str(), logger)) {
 		logger->Log("Cannot find ImageToPAA directory, please re-install your DayZ Tools");
+		delete logger;
+		return 1;
+	}
+
+	_dzToolsAddonBuilderDir = _dzToolsDir;
+	_dzToolsAddonBuilderDir.append("\\Bin\\AddonBuilder");
+	if (!DirExists(_dzToolsAddonBuilderDir.c_str(), logger)) {
+		logger->Log("Cannot find AddonBuilder directory, please re-install your DayZ Tools");
 		delete logger;
 		return 1;
 	}
@@ -315,25 +342,28 @@ int main(int argc, char* argv[]) {
 	exitLog = "PreparePBO() exited with Code: ";
 	logger->Log(exitLog.append(std::to_string(exitCode)));
 	logger->LogLine(50);
-	logger->Log("Calling CreatePBO()");
-	logger->LogLine(50);
-	exitCode = CreatePBO();
-	exitLog = "CreatePBO() exited with Code: ";
-	logger->Log(exitLog.append(std::to_string(exitCode)));
+
+	if (exitCode == 0) {
+		logger->Log("Calling CreatePBO()");
+		logger->LogLine(50);
+		exitCode = CreatePBO();
+		exitLog = "CreatePBO() exited with Code: ";
+		logger->Log(exitLog.append(std::to_string(exitCode)));
+	}
 
 	//Exit and Cleanup
+	delete logger;
+
 	if (exitCode == 0) {
-		logger->Log("All operations completed succesfully");
+		std::cout << "All operations completed succesfully" << std::endl;
 	}
 	else {
-		logger->Log("One or more operations failed..");
+		std::cout << "One or more operations failed. See log.txt for more info" << std::endl;
 	}
 
 	do {
 		std::cout << "Press a key to continue...";
 	} while (std::cin.get() != '\n');
-
-	delete logger;
 
 	return 0;
 }
