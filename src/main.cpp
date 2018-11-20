@@ -120,26 +120,43 @@ int PreparePBO() {
 		logger->Log("Creating temp folder in P: Drive...");
 		fs::create_directories("P:/temp");
 	}
-	else { // Else remove the temp folder
-		logger->Log("Removing temp folder...");
-		fs::remove_all("P:/temp");
-		logger->Log("Creating temp folder in P: Drive...");
-		fs::create_directories("P:/temp");
-	}
 
 	//Check if directory is created
 	if (!DirExists("P:/temp", logger)) {
 		logger->Log("Failed to create temp folder in P: Drive!"); // print error
 		return 1; // return
 	};	
+	
+	//Get project name
+	std::stringstream ss(_pboSrc);
+	std::vector<std::string> path;
+	std::string segment;
+	while (std::getline(ss, segment, '\\')) {
+		path.push_back(segment);
+	}
 
+	std::string _pboTempSrc = "P:\\temp\\";
+	_pboTempSrc.append(path[path.size() - 1]);
+
+	if (DirExists(_pboTempSrc.c_str(), logger)) {
+		fs::remove_all(_pboTempSrc);
+	}
+
+	fs::create_directories(_pboTempSrc);
+
+	if (!DirExists(_pboTempSrc.c_str(), logger)) {
+		logger->Log("Failed to create temp folder in P: Drive!"); // print error
+		return 1; // return
+	}
+
+	//Create project folder in temp folder
 	logger->Log("Directory created succesfully");
 
 	logger->Log("Attempting to copy files...");
 	//Copy over files to temp folder
 	try
 	{
-		fs::copy(_pboSrc, "P:/temp", fs::copy_options::overwrite_existing | fs::copy_options::recursive);
+		fs::copy(_pboSrc, _pboTempSrc, fs::copy_options::overwrite_existing | fs::copy_options::recursive);
 	}
 	catch (std::exception& e)
 	{
@@ -157,7 +174,8 @@ int PreparePBO() {
 		command.append(_dzToolsImageToPaaDir);
 		command.append("\\ImageToPAA.exe");
 		command.append("\" ");
-		command.append("P:\\temp\\data\\layers"); // Run with this argument
+		command.append(_pboTempSrc);
+		command.append("\\data\\layers"); // Run with this argument
 
 		int result = system(command.c_str()); // Run the command
 
@@ -173,6 +191,8 @@ int PreparePBO() {
 * Actually create the pbo and binarize
 */
 int CreatePBO() {
+
+
 	return 0;
 }
 
@@ -219,7 +239,7 @@ int main(int argc, char* argv[]) {
 
 		// Default direct copy files to not be binarized
 		std::vector<std::string>_CopyDirectTypesDefault;
-		_CopyDirectTypesDefault.insert(_CopyDirectTypesDefault.end(), {"*.emat","*.edds","*.ptc","*.c","*.imageset","*.layout","*.ogg"});
+		_CopyDirectTypesDefault.insert(_CopyDirectTypesDefault.end(), {"*.emat","*.edds","*.ptc","*.c","*.imageset","*.layout","*.ogg","*.paa","*.rvmat"});
 
 		_settingsFile << "ListOfFilesToCopyDirectly=";
 		for (int i = 0; i < _CopyDirectTypesDefault.size(); i++) {
