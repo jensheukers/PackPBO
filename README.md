@@ -4,6 +4,9 @@ It purpose is to make building addons a "easier" process, and does so by automat
 it uses AddonBuilder & ImageToPAA to finalize the process.
 
 # How to use
+Release Download:
+https://github.com/jensheukers/PackPBO/tree/release
+
 When using PackPBO For the first time it will ask you for your DayZ Tools installation, then some more options might be asked. To change settings later you can go in the generated settings.txt file. </br>
 
 Right now you can only enable/disable loud output, and the files to copy over directly, but more settings are going to be added in near future builds (Generate .bikey, sign pbo's, and more custom options).
