@@ -6,6 +6,8 @@
 *
 *	© 2018, www.jensheukers.nl
 */
+#define _CRT_SECURE_NO_WARNINGS 0
+
 #include <iostream>
 #include <filesystem>
 #include <string>
@@ -198,7 +200,7 @@ int CreatePBO() {
 	_includesPath.append("\\includes.txt");
 	std::ofstream _includes(_includesPath, std::ofstream::out);
 	_includes << _copyDirectTypes;
-	logger->Log("Succes Files to copy directly = ");
+	logger->Log("Files to copy directly = ");
 	logger->Log(_copyDirectTypes);
 	_includes.close();
 
@@ -352,6 +354,10 @@ int main(int argc, char* argv[]) {
 	}
 
 	//Exit and Cleanup
+
+	logger->Log("Clearing temp folder..");
+	fs::remove_all("P:\\temp\\");
+
 	delete logger;
 
 	if (exitCode == 0) {
