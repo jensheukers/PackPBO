@@ -2,7 +2,7 @@
 *	Filename: logger.cpp
 *
 *	Description: Source file for logger class
-*	Version: 19/11/2018
+*	Version: 20/11/2018
 *
 *	© 2018, www.jensheukers.nl
 */
@@ -14,6 +14,10 @@ Logger::Logger(std::string _logFile, bool _loudOutput) {
 	this->_loudOutput = _loudOutput;
 
 	std::ofstream _file(_logFile, std::ofstream::out);
+}
+
+Logger::~Logger() {
+	this->Log("Logger Terminated");
 }
 
 void Logger::Log(std::string line) {

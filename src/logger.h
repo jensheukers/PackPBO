@@ -2,7 +2,7 @@
 *	Filename: logger.h
 *
 *	Description: Header file for logger class
-*	Version: 19/11/2018
+*	Version: 20/11/2018
 *
 *	© 2018, www.jensheukers.nl
 */
@@ -18,6 +18,11 @@ public:
 	* Constructor
 	*/
 	Logger(std::string _logFile, bool _loudOutput);
+
+	/*
+	* Destructor
+	**/
+	~Logger();
 
 	/**
 	* Log a line to the logfile and console
