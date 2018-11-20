@@ -8,9 +8,6 @@ When using PackPBO For the first time it will ask you for your DayZ Tools instal
 
 Right now you can only enable/disable loud output, and the files to copy over directly, but more settings are going to be added in near future builds (Generate .bikey, sign pbo's, and more custom options).
 
-# How to Compile Source
-Right now you can easily create a empty C++ project in visual studio, and add the main.cpp, logger.h, logger.cpp files to create a project. Soon a makefile will be included!
-
 # License
 Copyright (C) 2018 Jens Heukers </br>
 
